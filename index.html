@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOMB BUSTERS 入室再現</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#fff;color:#111;}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #eee;}
+h1{margin:0;font-size:18px;}
+.small{font-size:12px;opacity:.75;}
+.join-box{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:12px;}
+.join-box input{padding:8px;border:1px solid #ddd;border-radius:6px;font-size:16px;}
+.btn{padding:6px 10px;border:1px solid #ddd;border-radius:6px;background:#f8f8f8;cursor:pointer;}
+.btn.primary{background:#111;color:#fff;border-color:#111;}
+.btn.ghost{background:transparent;}
+.hidden{display:none;}
+#lobby{padding:20px;border-top:1px solid #eee;}
+.copy-btn.copied, .btn.ghost.copied{background:#16a34a;color:#fff;border-color:#16a34a;}
+.seat-pop{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);background:orange;border:1px solid #eee;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.12);padding:10px;z-index:220;display:flex;flex-direction:column;gap:10px;min-width:280px;}
+.seat-pop.hidden{display:none;}
+.seat-pop .row{display:flex;gap:8px;align-items:center;}
+.seat-pop label{width:84px;font-size:13px;}
+.seat-pop .tabs{display:flex;gap:6px;flex-wrap:wrap;}
+.tab{padding:6px 10px;border:1px solid #ddd;border-radius:999px;cursor:pointer;user-select:none;position:relative;}
+.tab.disabled::after{content:'✕';position:absolute;inset:0;display:grid;place-items:center;font-size:18px;font-weight:700;color:#b91c1c;pointer-events:none;}
+.tab.active{background:#111;color:#fff;border-color:#111;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>BOMB BUSTERS</h1>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <div class="small" id="roomInfo"></div>
+    <button class="btn ghost" id="copyLinkBtn">リンクコピー</button>
+  </div>
+</header>
+
+<main>
+<div class="join-box" id="joinBox">
+  <input id="userName" placeholder="名前（4文字以内）" maxlength="4" />
+  <input id="roomCode" placeholder="ルームコード（未入力で自動生成）" maxlength="12" />
+  <button class="btn primary" id="btnJoin">入室</button>
+</div>
+
+<div id="lobby" class="hidden">
+  <h2>ロビー</h2>
+  <div id="roomInfoLobby"></div>
+  <p>ここにテーブルや情報が表示されます。</p>
+</div>
+</main>
+
+<!-- 着席ポップ -->
+<div id="seatPop" class="seat-pop hidden">
+  <div class="row"><label>席を選択</label><div id="seatTabs" class="tabs"></div></div>
+  <div class="row" style="justify-content:flex-end">
+    <button class="btn small ghost" id="btnSeatCancel">観戦</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, set, get, update, onDisconnect } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+// ▼ 新しい Firebase 設定に置き換え
+const firebaseConfig = {
+  apiKey: "AIzaSyAMeKfMoHt9qOQ2VuUBpkrKuei7yGBbEi8",
+  authDomain: "cheesetheft-fd52f.firebaseapp.com",
+  databaseURL: "https://cheesetheft-fd52f-default-rtdb.firebaseio.com",
+  projectId: "cheesetheft-fd52f",
+  storageBucket: "cheesetheft-fd52f.firebasestorage.app",
+  messagingSenderId: "298688959395",
+  appId: "1:298688959395:web:6ac2c3eb214201f2020016",
+  measurementId: "G-HPDFTCLR8H"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+const state = { userId: crypto.randomUUID(), seatedTable: null };
+
+const joinBox = document.getElementById('joinBox');
+const inputName = document.getElementById('userName');
+const inputCode = document.getElementById('roomCode');
+const btnJoin = document.getElementById('btnJoin');
+const lobby = document.getElementById('lobby');
+const roomInfo = document.getElementById('roomInfo');
+const roomInfoLobby = document.getElementById('roomInfoLobby');
+const copyLinkBtn = document.getElementById('copyLinkBtn');
+
+const seatPop = document.getElementById('seatPop');
+const seatTabs = document.getElementById('seatTabs');
+const btnSeatCancel = document.getElementById('btnSeatCancel');
+
+// ランダムルームコード生成
+function generateRoomCode(length = 6){
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for(let i=0;i<length;i++) code += chars.charAt(Math.floor(Math.random()*chars.length));
+  return code;
+}
+
+// ページ読み込み時にURLからroomパラメータがあれば入力欄にセット
+const urlParams = new URLSearchParams(window.location.search);
+const roomFromUrl = urlParams.get('room');
+if(roomFromUrl){
+  inputCode.value = roomFromUrl;
+}
+
+// 入室処理
+btnJoin.addEventListener('click', async () => {
+  state.userName = inputName.value || '名無し';
+  state.roomCode = inputCode.value.trim() || generateRoomCode();
+
+  await set(ref(db, `rooms/${state.roomCode}/users/${state.userId}`), {
+    name: state.userName,
+    joinedAt: Date.now()
+  });
+
+  const infoText = `ルーム: ${state.roomCode}, 名前: ${state.userName}`;
+  roomInfo.textContent = infoText;
+  roomInfoLobby.textContent = infoText;
+
+  joinBox.classList.add('hidden');
+  lobby.classList.remove('hidden');
+
+  renderSeatTabs();
+  seatPop.classList.remove('hidden'); // 入室後のみ表示
+});
+
+// リンクコピー
+copyLinkBtn.addEventListener('click', async () => {
+  const url = `${location.origin}${location.pathname}?room=${state.roomCode}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    copyLinkBtn.classList.add('copied');
+    copyLinkBtn.textContent = 'コピー完了';
+
+    // 入力欄にも書き込む
+    inputCode.value = state.roomCode;
+
+    setTimeout(()=>{
+      copyLinkBtn.classList.remove('copied');
+      copyLinkBtn.textContent='リンクコピー';
+    },1500);
+  } catch {
+    prompt('コピーできません。手動でコピーしてください', url);
+  }
+});
+
+// 席タブ生成（1~8）
+function renderSeatTabs(){
+  seatTabs.innerHTML='';
+  for(let i=1;i<=8;i++){
+    const tab=document.createElement('div');
+    tab.className='tab';
+    tab.textContent=i;
+
+    const tRef=ref(db, `rooms/${state.roomCode}/tables/${i-1}`);
+    get(tRef).then(snap=>{
+      const t=snap.val();
+      if(t?.playerId) tab.classList.add('disabled'); // 既に着席済みなら✕
+    });
+
+    tab.onclick=async ()=>{
+      if(tab.classList.contains('disabled')) return;
+      await update(ref(db, `rooms/${state.roomCode}/tables/${i-1}`), {
+        playerId: state.userId,
+        playerName: state.userName
+      });
+      tab.classList.add('disabled');
+      onDisconnect(ref(db, `rooms/${state.roomCode}/tables/${i-1}`)).remove();
+      setTimeout(()=>seatPop.classList.add('hidden'), 1000);
+      state.seatedTable=i-1;
+    };
+
+    seatTabs.appendChild(tab);
+  }
+}
+
+// 観戦ボタン
+btnSeatCancel.onclick=()=>{seatPop.classList.add('hidden');state.seatedTable=null;}
+</script>
+
+</body>
+</html>
