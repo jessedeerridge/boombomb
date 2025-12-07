@@ -190,11 +190,11 @@ h1{margin:0;font-size:18px;}
   border-radius:999px;
   background:#111;
   color:#fff;
-  font-size:11px;
+  font-size:8px;
   line-height:1.2;
 }
 .card-text{
-  font-size:11px;
+  font-size:8px;
   line-height:1.4;
   color:#111;
 }
@@ -927,30 +927,30 @@ const CARD_DEFS = [
   // ① いつでも使える
   { id:'ANY_SKIP_NEXT',        timing:'いつでも', text:'1人手番を飛ばす' },
   { id:'ANY_SKIP_TO_PLAYER',   timing:'いつでも', text:'好きな人まで手番を飛ばす' },
-  { id:'ANY_DICE_MINUS2',      timing:'いつでも', text:'任意のダイスを1つ選び、目を-2する。(1,2に使えない)' },
-  { id:'ANY_DICE_MINUS1',      timing:'いつでも', text:'任意のダイスを1つ選び、目を-1する。' },
-  { id:'ANY_DICE_PLUS1',       timing:'いつでも', text:'任意のダイスを1つ選び、目を+1する。' },
-  { id:'ANY_DICE_PLUS2',       timing:'いつでも', text:'任意のダイスを1つ選び、目を+2する。(5,6に使えない)' },
-  { id:'ANY_ADD_DICE1_START',  timing:'いつでも', text:'開始時にサイコロを1つ追加する。' },
-  { id:'ANY_ADD_DICE2_START',  timing:'いつでも', text:'開始時にサイコロを2つ追加する。' },
+  { id:'ANY_DICE_MINUS2',      timing:'いつでも', text:'任意のダイス目1つを-2する(1,2に使えない)' },
+  { id:'ANY_DICE_MINUS1',      timing:'いつでも', text:'任意のダイス目1つを-1する' },
+  { id:'ANY_DICE_PLUS1',       timing:'いつでも', text:'任意のダイス目1つを+1する' },
+  { id:'ANY_DICE_PLUS2',       timing:'いつでも', text:'任意のダイス目1つを+2する(5,6に使えない)' },
+  { id:'ANY_ADD_DICE1_START',  timing:'いつでも', text:'振る前にダイスを1つ増やす' },
+  { id:'ANY_ADD_DICE2_START',  timing:'いつでも', text:'振る前にダイスを2つ増やす' },
   { id:'ANY_HEAL1',            timing:'いつでも', text:'任意のプレイヤーを1回復する' },
-  { id:'ANY_SET_DICE_ANY',     timing:'いつでも', text:'任意のダイスを1つ選び、任意の目に変える' },
-  { id:'ANY_REROLL_1_OR_2',    timing:'いつでも', text:'1,2個ふりなおす' },
-  { id:'ANY_EXPLOSION_PLUS1',  timing:'いつでも', text:'爆発時に血+1' },
-  { id:'ANY_BOTH_NEIGHBOR_B1', timing:'いつでも', text:'両隣も血1' },
-  { id:'ANY_SELF_EXPLOSION_B1',timing:'いつでも', text:'自分が爆破で誰かに血1' },
-  { id:'ANY_RESET_DICE_8',     timing:'いつでも', text:'ダイスの数を8にもどす' },
-  { id:'ANY_START_DICE_MINUS1',timing:'いつでも', text:'開始時にサイコロ1減らす' },
-  { id:'ANY_START_DICE_MINUS2',timing:'いつでも', text:'開始時にサイコロ2減らす' },
+  { id:'ANY_SET_DICE_ANY',     timing:'いつでも', text:'任意のダイス目1つを任意の目に変える' },
+  { id:'ANY_REROLL_1_OR_2',    timing:'いつでも', text:'ダイスを1～2個ふりなおす' },
+  { id:'ANY_EXPLOSION_PLUS1',  timing:'いつでも', text:'爆発時に全ての爆発ダメージ+1' },
+  { id:'ANY_BOTH_NEIGHBOR_B1', timing:'いつでも', text:'誰かが爆発した時、両隣も爆発する' },
+  { id:'ANY_SELF_EXPLOSION_B1',timing:'いつでも', text:'自分が爆発した時、もう一人選んで爆発' },
+  { id:'ANY_RESET_DICE_8',     timing:'いつでも', text:'ダイスの数を8つにもどす' },
+  { id:'ANY_START_DICE_MINUS1',timing:'いつでも', text:'振る前にダイスを1つ除く' },
+  { id:'ANY_START_DICE_MINUS2',timing:'いつでも', text:'振る前にダイスを2つ除く' },
 
   // ② 自分の番で使える
-  { id:'TURN_DRAW2',                 timing:'自分の手番で', text:'カードを2枚ひく' },
-  { id:'TURN_PEEK_ROLE',             timing:'自分の手番で', text:'任意の1人を選び、正体を見る' },
-  { id:'TURN_SHOW_ROLE_HEAL1_EXILE', timing:'自分の手番で', text:'任意の1人に正体を見せて1回復する（使用後に除外する）' },
-  { id:'TURN_DRAW2_KEEP_GIVE1',      timing:'自分の手番で', text:'カードを2枚ひいて、1枚とり、1枚を任意のプレイヤーに渡す。' },
-  { id:'TURN_SHUFFLE3_ROLES_EXILE',  timing:'自分の手番で', text:'任意の3人を選び、正体カードをシャッフルする（使用後に除外する）' },
-  { id:'TURN_SELF_HEAL1_ALL_DRAW1',  timing:'自分の手番で', text:'自分が1回復する。その後、全員がカードを1枚ひく' },
-  { id:'TURN_SHOW_ROLES_MUTUAL_EXILE',timing:'自分の手番で', text:'身分を見せあう（使用後除外）' }
+  { id:'TURN_DRAW2',                 timing:'手番で', text:'カードを2枚ひく' },
+  { id:'TURN_PEEK_ROLE',             timing:'手番で', text:'任意の1人を選び、正体を見る' },
+  { id:'TURN_SHOW_ROLE_HEAL1_EXILE', timing:'手番で', text:'1人に正体を見せて1回復＊' },
+  { id:'TURN_DRAW2_KEEP_GIVE1',      timing:'手番で', text:'カードを2枚ひき、うち1枚は誰かに渡す' },
+  { id:'TURN_SHUFFLE3_ROLES_EXILE',  timing:'手番で', text:'3人選び、正体をシャッフル＊' },
+  { id:'TURN_SELF_HEAL1_ALL_DRAW1',  timing:'手番で', text:'1回復した後、全員カードを1枚ひく' },
+  { id:'TURN_SHOW_ROLES_MUTUAL_EXILE',timing:'手番で', text:'正体を見せあう＊' }
 ];
 
 // 各カード2枚ずつの山札
