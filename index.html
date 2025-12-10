@@ -237,22 +237,22 @@ font-weight:700;
 .player-tag.side-right .attached-cube-row{
   left:100%;
   /* -20px → +12px にして、タグの右外に配置 */
-  transform:translate(75px, -50%);
+  transform:translate(25px, -95%);
   gap:4px;
 }
 .player-tag.side-left .attached-cube-row{
   left:0;
   /* +20px → -12px にして、タグの左外に配置 */
-  transform:translate(calc(-100% + -10px), -50%);
+  transform:translate(calc(10% - 35px), -95%);
   gap:4px;
 }
 
 /* ▼公開後 or 個人的公開：正体カードが横にあるプレイヤーだけキューブを広くする */
 .player-tag.role-with-card.side-right .attached-cube-row{
-  transform:translate(105px, -50%);
+  transform:translate(25px, -95%);
 }
 .player-tag.role-with-card.side-left .attached-cube-row{
-  transform:translate(calc(-100% - 40px), -50%);
+  transform:translate(calc(10% - 35px), -95%);
 }
 
 
@@ -474,6 +474,20 @@ font-weight:700;
 }
 
 
+/* ★ 自分のネームタグ専用の赤キューブ位置（タグの真下に横一列） */
+.player-tag.me .attached-cube-row{
+  top:-80%;              /* タグの下端 */
+  left:420%;              /* タグ中央 */
+  transform:translate(0%, 4px);
+  gap:4px;               /* キューブ同士の間隔 */
+}
+
+/* 必要なら、個人的公開・正体公開後も同じ位置のままにする */
+.player-tag.me.role-with-card .attached-cube-row{
+  top:-80%;
+  left:560%;
+  transform:translate(0%, 4px);
+}
 
 
 
@@ -1690,6 +1704,7 @@ function createCardFace(cardId){
 }
 
 const state = {
+
   userId: savedUserId,
   userName: null,
   roomCode: null,
@@ -1713,7 +1728,8 @@ const state = {
   shuffle3Global: null, 
 };
 
-
+let firstTurnPeekStarted = false;          // 自分側で「初回の正体確認モード」に入ったか
+const firstPeekTargets   = {};             // { playerId: true } この端末だけで見えている正体
 
 const joinBox = document.getElementById('joinBox');
 const inputName = document.getElementById('userName');
@@ -2425,6 +2441,33 @@ function setDiceLocked(flag){
     });
   }
 }
+/* ★ 最初にダイスに触ったプレイヤーを「最初の手番」に確定させる */
+function maybeSetFirstTurnByDice(){
+  if (!state.roomCode) return;
+  if (!lastGameStarted) return;         // まだスタートしていないなら何もしない
+  if (state.seatedTable == null) return; // 席に座っていない観戦者は対象外
+
+  const tsRef = ref(db, `rooms/${state.roomCode}/turnState`);
+
+  get(tsRef).then(snap => {
+    const cur = snap.val();
+    // すでに誰かのターンが決まっているなら上書きしない
+    if (cur && cur.playerId) return;
+
+    const seatIndex  = state.seatedTable;
+    const playerName = state.userName || '名無し';
+
+    // ★ 最初だけ isFirstTurn, firstPeekDone=false を付けて書き込む
+    set(tsRef, {
+      seatIndex,
+      playerId:   state.userId,
+      playerName,
+      isFirstTurn:  true,
+      firstPeekDone:false,
+      updatedAt:   Date.now()
+    });
+  }).catch(()=>{ /* 失敗時は何もしない */ });
+}
 
 /* ★ 配列シャッフル */
 function shuffleArray(arr){
@@ -2772,12 +2815,34 @@ function subscribeGameStarted(){
 function subscribeTurnState(){
   if(!state.roomCode) return;
   const tRef = ref(db, `rooms/${state.roomCode}/turnState`);
+
   onValue(tRef, snap => {
     const v = snap.val();
     if(!v || !v.playerName) return;
+
     state.currentTurnSeat = v.seatIndex ?? null;
-    playTurnBanner(v.playerName);
+    playTurnBanner(v.playerName);   // ← 既存のターンバナーはそのまま
+
+    // ★ 最初のターン & まだ正体確認が終わっていない & 自分がその席のときだけ
+    if(
+      v.isFirstTurn &&
+      !v.firstPeekDone &&
+      state.seatedTable != null &&
+      state.seatedTable === state.currentTurnSeat
+    ){
+      startFirstTurnPeek();
+    }
   });
+}
+
+/* ★ 初回ターンの人だけに「正体を見る」ポップを出す */
+function startFirstTurnPeek(){
+  if (firstTurnPeekStarted) return; // 二重起動防止
+  firstTurnPeekStarted = true;
+
+  if (!peekRolePop) return;
+  // 既存の「正体を見るポップ」をそのまま利用
+  peekRolePop.classList.remove('hidden');
 }
 
 /* ★ 自分の能力カード（左スロット）を描画 */
@@ -3608,6 +3673,19 @@ if (state.roleOpenMap && state.roleOpenMap[p.id] && state.roleOpenMap[p.id].open
     tag.style.left = `${x}%`;
     tag.style.top  = `${y}%`;
 
+    tag.addEventListener('click', () => {
+      onPlayerTagClickForFirstPeek(tag);
+    });
+    const hasLocalPeek = !!firstPeekTargets[p.id];
+    if (hasLocalPeek) {
+      const roleInfo = state.roles && state.roles[p.id];
+      if (roleInfo && roleInfo.type) {
+        const mini = document.createElement('div');
+        mini.className = 'player-tag-role-mini peek-view';
+        mini.textContent = (roleInfo.type === 'LIGHT') ? '光' : '影';
+        tag.appendChild(mini);
+      }
+    }
 // ★ 能力ミニミニカード（常に公開）
 const chefIdForPlayer = state.chefRoles && state.chefRoles[p.id];
 if (chefIdForPlayer){
@@ -3878,6 +3956,52 @@ function showCardError(message, anchorEl){
   }, 2000);
 }
 
+/* ★ ネームタグクリック時：初回ターンの「1人だけ正体を見る」処理 */
+// ★ 初回スタート効果で「正体を見る」時のクリック処理
+async function onPlayerTagClickForFirstPeek(tag){
+  // このモードじゃないときは何もしない
+  if (!firstTurnPeekStarted) return;
+  if (!state.roomCode) return;
+
+  const targetId = tag.dataset.playerId;
+  // 自分自身はターゲットにしない
+  if (!targetId || targetId === state.userId) return;
+
+  // ① ローカル記録（自分の画面だけで見える「小さな正体カード」用）
+  firstPeekTargets[targetId] = true;
+  // 一度見終わったので、このモードは終了
+  firstTurnPeekStarted = false;
+
+  // ② 👀アイコン用に
+  //    「viewerId（自分）が targetId の正体を見た」と DB に保存
+  const viewerId = state.userId;
+  const viewRef  = ref(db, `rooms/${state.roomCode}/peekRoleView/${viewerId}`);
+  await set(viewRef, {
+    roleOwnerId: targetId,    // 誰の正体を見たか
+    viewerId: viewerId,       // 見ている人は自分
+    createdAt: Date.now(),
+    reason: 'FIRST_TURN'      // どの効果か（お好みで）
+  });
+
+  // ③ turnState の firstPeekDone を true にして
+  //    「初回の正体確認が終わった」ことを共有
+  const tsRef  = ref(db, `rooms/${state.roomCode}/turnState`);
+  const tsSnap = await get(tsRef);
+  const cur    = tsSnap.val() || {};
+  if (cur && cur.isFirstTurn && !cur.firstPeekDone && cur.playerId === viewerId){
+    await update(tsRef, { firstPeekDone: true });
+  }
+
+  // ④ 「正体を見る」ポップを閉じる
+  if (peekRolePop){
+    peekRolePop.classList.add('hidden');
+  }
+
+  // ⑤ プレイヤー円を再描画（自分のミニ正体カード反映）
+  if (latestPlayers.length){
+    renderPlayerCircle(latestPlayers);
+  }
+}
 
 
 /* 手札使用ポップをクリック位置に出す（「使う」だけ） */
@@ -5406,7 +5530,9 @@ if(diceAdjustPop){
 }
 
 function onDicePointerDown(e){
-  const die = e.currentTarget;
+   maybeSetFirstTurnByDice();
+
+ const die = e.currentTarget;
   if(diceLocked) return;
   if(die.classList.contains('rolling')) return;
 
