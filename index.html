@@ -237,22 +237,22 @@ font-weight:700;
 .player-tag.side-right .attached-cube-row{
   left:100%;
   /* -20px → +12px にして、タグの右外に配置 */
-  transform:translate(35px, -50%);
+  transform:translate(75px, -50%);
   gap:4px;
 }
 .player-tag.side-left .attached-cube-row{
   left:0;
   /* +20px → -12px にして、タグの左外に配置 */
-  transform:translate(calc(-100% + 20px), -50%);
+  transform:translate(calc(-100% + -10px), -50%);
   gap:4px;
 }
 
 /* ▼公開後 or 個人的公開：正体カードが横にあるプレイヤーだけキューブを広くする */
 .player-tag.role-with-card.side-right .attached-cube-row{
-  transform:translate(75px, -50%);
+  transform:translate(105px, -50%);
 }
 .player-tag.role-with-card.side-left .attached-cube-row{
-  transform:translate(calc(-100% - 20px), -50%);
+  transform:translate(calc(-100% - 40px), -50%);
 }
 
 
@@ -949,10 +949,10 @@ font-weight:700;
 /* ★★★ ここから右上キューブ用 ★★★ */
 .cube-circle{
   position:fixed;
-  right:16px;
+  right:1px;
   top:72px;
-  width:220px;
-  height:220px;
+  width:20px;
+  height:20px;
   border-radius:50%;
   background:transparent; /* 円は不可視 */
   border:none;
@@ -1814,7 +1814,7 @@ const CHEF_DEFS = [
   },
   {
     id:'CHEF_WARRIOR',
-    name:'戦士シェフ',
+    name:'ペッパー',
     shortLabel:'±1 強化',
     detail:'あなたがダイス目を増減するカードを使う時、さらに±1してもよい。',
     artType:'CARD_DICE_PM1'
