@@ -346,12 +346,29 @@ font-weight:700;
 
 /* ★ 正体カード＋手札を横並びにするコンテナ */
 .my-hand-row{
-  display:flex;
+  display:grid;
+  /* 3列グリッド（真ん中は手札の中心用の空き、みたいなイメージ） */
+  grid-template-columns:auto auto auto;
+  grid-auto-rows:auto;
   justify-content:center;
-  align-items:flex-start;
-  gap:8px;
+  column-gap:8px;
+  row-gap:6px;
   margin-top:6px;
 }
+/* 1段目：手札は1〜3列を全部使って横に並ぶ */
+.my-hand-row #myHand{
+  grid-column:1 / 4;  /* 1列目〜3列目まで */
+}
+
+/* 2段目：左に能力カード、右に正体カード */
+.my-hand-row #myAbilitySlot{
+  grid-column:1;
+}
+
+.my-hand-row #myRoleSlot{
+  grid-column:3;
+}
+
 
 /* ★ 正体カード用スロット（サイズは他カードと同じ） */
 .my-role-slot{
@@ -1300,14 +1317,17 @@ font-weight:700;
 <!-- 自分の手札 -->
 <div class="my-hand-wrapper">
   <div class="my-hand-title">自分のカード</div>
-<div class="my-hand-row">
-  <!-- ★ 能力カード置き場（正体カードの左） -->
-  <div id="myAbilitySlot" class="my-ability-slot"></div>
-  <!-- ★ 正体カード置き場 -->
-  <div id="myRoleSlot" class="my-role-slot"></div>
-  <!-- 既存の手札 -->
-  <div id="myHand" class="my-hand"></div>
-</div>
+
+  <!-- 1段目：手札（中央寄せ） -->
+  <div class="my-hand-row my-hand-row-top">
+    <div id="myHand" class="my-hand"></div>
+  </div>
+
+  <!-- 2段目：正体カード＋能力カード（中央寄せ） -->
+  <div class="my-hand-row my-hand-row-bottom">
+    <div id="myAbilitySlot" class="my-ability-slot"></div>
+    <div id="myRoleSlot" class="my-role-slot"></div>
+  </div>
 
 <!-- ★ 能力カード拡大表示ポップ -->
 <div id="abilityOverlay" class="ability-overlay hidden">
